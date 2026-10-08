@@ -1,0 +1,746 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TVAL now 時系列予測ラボ — オフライン版</title>
+<style>
+:root{color-scheme:dark;--bg:#080e1a;--card:#101c2e;--line:#293b53;--text:#edf3ff;--muted:#a5b5cc;--a:#3bdac8;--b:#f2b35b;--red:#ff8296;--blue:#7aafff}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 0% 0%,#192c46,#080e1a 65%);color:var(--text);font:15px/1.7 -apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif}
+header,.wrap{max-width:1300px;margin:auto;padding:22px 24px}header{padding-top:35px;padding-bottom:12px}h1{font-size:clamp(25px,3vw,36px);margin:0;font-weight:800;letter-spacing:.015em}h2{font-size:21px;margin:0 0 15px}h3{font-size:16px;margin:18px 0 8px}.lead{color:var(--muted);margin:5px 0 0}.eyebrow{color:var(--a);font-size:12px;font-weight:800;letter-spacing:.15em}button,input,select{font:inherit}button{cursor:pointer;transition:filter .15s}button:hover{filter:brightness(1.14)}button:disabled{opacity:.45;cursor:not-allowed}.btn{border:1px solid #426079;background:#203854;color:white;padding:9px 15px;border-radius:10px;font-weight:700}.btn.main{background:linear-gradient(120deg,#06b9aa,#2072bf);border-color:#30d2c6}.btn.warn{background:#402435;border-color:#9b586b}.btn.small{padding:6px 10px;font-size:13px}.grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:17px}.card{grid-column:span 12;border:1px solid var(--line);background:linear-gradient(155deg,#122139,#0d1727);border-radius:17px;padding:20px;box-shadow:0 10px 30px #0002}.half{grid-column:span 6}.third{grid-column:span 4}.metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}.metric{background:#091426;border:1px solid #273c56;border-radius:11px;padding:12px}.metric strong{display:block;font-size:24px;color:#f5faff;font-variant-numeric:tabular-nums}.metric span{font-size:12px;color:var(--muted)}.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:12px;margin-bottom:14px}.field{display:flex;flex-direction:column;gap:4px;color:#cad7e8;font-size:13px}.field input,.field select{width:100%;min-height:40px;border-radius:8px;border:1px solid #37506b;background:#0b1627;color:var(--text);padding:8px}.field input:focus,.field select:focus{outline:2px solid #19bfb8}.drop{border:2px dashed #49687f;background:#0b1a2c;border-radius:13px;padding:22px;text-align:center;cursor:pointer;transition:.2s}.drop.hover{background:#153e48;border-color:#4cf1cb}.drop input{display:none}.note{font-size:13px;color:var(--muted);margin:10px 0}.notice{border-left:3px solid #edb65e;padding:9px 13px;background:#33271966;border-radius:4px;color:#ffe3b6}.good{color:#7beecf}.bad{color:#ff9eac}.muted{color:var(--muted)}.status{white-space:pre-wrap;border-radius:10px;padding:10px;background:#071121;color:#b8d0e4;margin:10px 0 0;min-height:40px;max-height:180px;overflow:auto}.tablewrap{overflow:auto;max-height:400px;border:1px solid #2a3d55;border-radius:11px}table{border-collapse:collapse;min-width:620px;width:100%;font-size:13px}th,td{padding:9px 11px;text-align:right;border-bottom:1px solid #263a51;font-variant-numeric:tabular-nums}th{background:#172b43;color:#bad2e9;position:sticky;top:0}th:first-child,td:first-child{text-align:left}td:last-child{max-width:410px}.section-tabs{display:flex;gap:8px;flex-wrap:wrap;padding:8px 0 20px}.section-tabs button{padding:10px 17px;background:#132139;color:#a9c0d7;border:1px solid #2c425b;border-radius:10px;font-weight:700}.section-tabs button.active{background:#164d57;color:#b5ffed;border-color:#40c6ae}.page{display:none}.page.active{display:block}.legend{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:8px 0}.station{display:inline-flex;gap:6px;align-items:center;color:#dce7f7;font-size:12px}.swatch{display:inline-block;width:12px;height:12px;border-radius:4px}.chartbox{position:relative;width:100%;height:380px;background:#091728;border:1px solid #28405d;border-radius:12px;overflow:hidden}canvas{display:block;width:100%;height:100%}.tooltip{position:absolute;pointer-events:none;background:#030b16ec;border:1px solid #466078;color:#ecf6ff;white-space:pre-line;font-size:12px;line-height:1.6;padding:8px;border-radius:7px;display:none;z-index:5;max-width:230px}.heatmap{display:grid;grid-template-columns:48px repeat(24,minmax(18px,1fr));gap:3px;overflow:auto}.heatcell{min-height:24px;display:flex;align-items:center;justify-content:center;font-size:10px;border-radius:3px;background:#15304b;color:#cad8ea}.heatlabel{background:none;color:var(--muted);font-size:11px}.divider{height:1px;background:#304159;margin:16px 0}.checks{display:flex;gap:13px;flex-wrap:wrap;margin:10px 0}.checks label{font-size:13px;display:flex;gap:5px;align-items:center}.checks input{accent-color:#39c7b6}.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}.progress{height:5px;background:#1d314c;border-radius:5px;overflow:hidden;margin-top:7px}.progress>div{height:100%;background:#29c9be;width:0%;transition:width .1s}.pill{font-size:12px;color:#bde4dd;border:1px solid #2c7e7a;background:#114843;border-radius:10px;padding:1px 9px}footer{font-size:12px;color:var(--muted);padding:20px 0 50px}code{color:#9de6e6}details summary{cursor:pointer;color:#b9edf2;font-weight:700}@media(max-width:850px){header,.wrap{padding-left:12px;padding-right:12px}.half,.third{grid-column:span 12}.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.chartbox{height:300px}.card{padding:14px}.heatmap{min-width:680px}.chartScroll{overflow-x:auto}}
+</style>
+</head>
+<body>
+<header><div class="eyebrow">OFFLINE FORECAST LAB / TVAL NOW CSV</div><h1>視聴率 時系列予測ラボ <span class="pill">v1.0</span></h1><p class="lead">複数CSVの統合 → 1分時系列 → 6局の未来予測 → 過去データで検証。外部通信・CDNなし。</p></header>
+<div class="wrap">
+<div class="section-tabs" role="tablist">
+ <button class="active" data-tab="data">01 データ取込・診断</button><button data-tab="forecast">02 時点・範囲予測</button><button data-tab="backtest">03 モデル対戦・精度</button><button data-tab="guide">04 仕様・制約</button>
+</div>
+<section class="page active" id="page-data"><div class="grid">
+ <article class="card"><h2>複数ファイルを取り込む</h2><label class="drop" id="drop"><strong>CSV / ZIP を複数選択、またはここにドロップ</strong><br><span class="muted">UTF-8（BOM可）・Shift_JIS / ZIP内CSV。タイムスタンプをキーに自動統合</span><input id="files" type="file" accept=".csv,.zip,text/csv,application/zip" multiple></label><div class="row" style="margin-top:12px"><button class="btn" id="exportBackup">データをJSONでバックアップ</button><button class="btn" id="importBackup">JSONバックアップを復元</button><input id="backupFile" type="file" accept=".json" style="display:none"><button class="btn warn" id="clearData">取り込んだデータを全削除</button></div><div class="progress"><div id="progress"></div></div><div class="status" id="importStatus">CSVファイルを選択してください。サンプルは添付ファイルの27列構成に対応しています。</div></article>
+ <article class="card"><h2>データ全体の状態</h2><div class="metrics" id="metrics"><div class="metric"><strong>0</strong><span>時点</span></div></div><p class="note" id="dateCoverage"></p><div class="two"><div><h3>読み込み履歴</h3><div class="tablewrap"><table><thead><tr><th>ファイル名</th><th>入力行</th><th>取込結果</th></tr></thead><tbody id="fileLog"></tbody></table></div></div><div><h3>競合・警告（最大100件保存）</h3><div class="tablewrap"><table><thead><tr><th>発生日時・対象</th><th>内容</th></tr></thead><tbody id="conflictLog"></tbody></table></div></div></div></article>
+ <article class="card"><h2>曜日×時刻のデータ充足度</h2><p class="note">各セルは「少なくとも1時点を記録した異なる日付」の数です。行数が多くても同じ日付しかなければ1日と数えます。</p><div style="overflow:auto"><div id="heatmap" class="heatmap"></div></div></article>
+ <article class="card"><h2>観測データのグラフ</h2><div class="fields"><label class="field">表示日<input id="viewDate" type="date"></label></div><div class="legend" id="legend1"></div><div class="chartbox"><canvas id="dataChart"></canvas><div class="tooltip" id="dataTip"></div></div><p class="note">実線はCSV値。実測と経路推定はデータ内部で区別されます。局名の凡例に対応する色で描画します。</p></article>
+ </div></section>
+<section class="page" id="page-forecast"><div class="grid">
+ <article class="card"><h2>未来の時点・範囲を予測</h2><p class="note">「情報の締切」までの数値だけがモデルに渡ります。対象期間内の既知の実測値は予測計算には使わず、比較表示だけに使用します。</p>
+ <div class="fields"><label class="field">情報の締切（この時刻まで使用可）<input id="cutoff" type="datetime-local" step="60"></label><label class="field">予測開始<input id="forecastStart" type="datetime-local" step="60"></label><label class="field">予測終了（両端を含む）<input id="forecastEnd" type="datetime-local" step="60"></label><label class="field">予測モデル<select id="modelSelect"><option value="ensemble">複合（利用可能なモデルを合成）</option><option value="persist">直前値維持</option><option value="trend">短期トレンド（減衰）</option><option value="seasonal">類似曜日・時刻の履歴</option><option value="ridge">Ridge回帰（実学習）</option></select></label></div>
+ <div class="checks"><label><input id="useEstimated" type="checkbox">経路推定値も入力に使用する</label><label><input id="showActual" type="checkbox" checked>予測後、対象期間の実測を比較表示</label><label><input id="showPast" type="checkbox" checked>締切より前30分も表示</label></div>
+ <div class="row"><button class="btn main" id="runForecast">予測を実行</button><button class="btn" id="demoForecast">CSV内の途中時刻で試す</button><button class="btn" id="exportForecast">予測結果をCSV保存</button></div><div class="status" id="forecastStatus">CSVを読み込むと、ファイル内で検証可能な時刻を自動設定します。</div></article>
+ <article class="card"><h2>6局の実測・予測曲線</h2><div class="legend" id="legend2"></div><div class="chartbox" style="height:440px"><canvas id="forecastChart"></canvas><div class="tooltip" id="forecastTip"></div></div><p class="note">予測：破線　・　実測比較：細い点線　・　締切位置：縦線。欠損値や予測不能な時刻は線をつなぎません。</p><div id="forecastStats" class="metrics" style="margin-top:15px"></div></article>
+ <article class="card"><h2>予測値一覧（先頭300行）</h2><div class="tablewrap"><table><thead><tr><th>日時</th><th>NHK</th><th>日テレ</th><th>テレ朝</th><th>TBS</th><th>テレ東</th><th>フジ</th></tr></thead><tbody id="forecastRows"></tbody></table></div></article>
+ </div></section>
+<section class="page" id="page-backtest"><div class="grid"><article class="card"><h2>ウォークフォワード検証 — 未来を見ずに対戦</h2><p class="note">各検証起点より後のデータを学習に混ぜません。同じ起点から指定分数先の数値を予測し、実測と照合。複数のCSVを横断します。</p><div class="fields"><label class="field">検証期間（開始日）<input id="testFrom" type="date"></label><label class="field">検証期間（終了日）<input id="testTo" type="date"></label><label class="field">何分先を採点するか（カンマ区切り）<input id="horizons" type="text" value="1,5,15,30,60"></label><label class="field">検証起点の間隔（分）<input id="originStep" type="number" min="5" max="360" value="30"></label><label class="field">最大起点数（負荷制限）<input id="maxOrigins" type="number" min="1" max="240" value="80"></label><label class="field">採点対象<select id="testObserved"><option value="observed">実測のみ（推奨）</option><option value="all">経路推定も含める</option></select></label></div><div class="row"><button class="btn main" id="runBacktest">モデル5種を同条件で検証</button><button class="btn" id="exportBacktest">検証結果をCSV保存</button></div><div class="status" id="backtestStatus">予測起点数と検証日数を分けて表示します。Ridgeは過去に十分な学習日数がない場合は採点対象外です。</div><div class="progress"><div id="backProgress"></div></div></article>
+ <article class="card"><h2>モデル別総合成績</h2><div class="tablewrap"><table><thead><tr><th>モデル</th><th>MAE</th><th>RMSE</th><th>Bias</th><th>採点数</th><th>検証日数</th></tr></thead><tbody id="scoreRows"></tbody></table></div><p class="note">小さいMAEが良好。Biasは「予測 − 実測」。モデルによって予測可能な時点数が異なるため、採点数も必ず比較してください。</p></article>
+ <article class="card"><h2>予測距離ごとの誤差（MAE）</h2><div class="tablewrap"><table id="horizonScore"><thead></thead><tbody></tbody></table></div></article>
+ <article class="card"><h2>検証結果の読み方</h2><p>1分先では直前値維持が強いこともあります。翌日・翌週の予測では、直前値維持が使えない場合もあります。<strong>同じ予測距離・同じ検証日・同じ採点時点での比較</strong>を重視してください。</p><p class="note">予測可能時点が少ない場合、平均誤差は見かけほど信頼できません。初版はモデル選択用の別検証集合や予測区間の校正を実装していないため、ランキングを最終的な実力順位とみなさないでください。</p></article>
+ </div></section>
+<section class="page" id="page-guide"><div class="grid"><article class="card"><h2>このHTMLで実装しているもの</h2><p>✅ 複数CSV・ZIPの一括投入／日時で統合／重複・矛盾の記録／IndexedDB自動保存／JSONバックアップ。<br>✅ 1分ごとの時点・時間範囲予測／6局同時計算／実測との重ね描画／CSV保存。<br>✅ 直前値維持・短期トレンド・曜日時刻類似・<strong>係数を過去データから学習するRidge回帰</strong>・複合予測。<br>✅ 複数日を用いた起点移動型バックテスト／MAE・RMSE・Bias／予測距離別評価。<br>✅ データ充足度ヒートマップ／観測率・経路推定率の把握。</p><div class="divider"></div><h2>重要な制限（誇張しません）</h2><p>・これはビデオリサーチの番組平均視聴率予測ではありません。<strong>TVAL nowのCSVに記録された局別表示値の予測</strong>です。内部集計仕様を断定しません。<br>・<strong>LightGBMは未実装</strong>。Ridge回帰はこのHTML内で実際に最小二乗＋L2正則化を学習します。<br>・数日分しかなければ曜日・時刻モデルは十分に成立しません。予測不能は「—」として扱います。<br>・同一時刻の値に競合がある場合、実測の方を優先し、同品質で数値が異なる場合は先着を維持して警告を記録します。元ファイルの完全な監査台帳は保持していません。<br>・保存容量はブラウザのIndexedDB制限に従います。非常に巨大なCSV群はブラウザメモリ不足の可能性があります。<br>・ZIP解凍には対応ブラウザの <code>DecompressionStream('deflate-raw')</code> を使用します。非対応環境ではCSVを直接投入してください。<br>・データの数値は表示値（丸め後）です。6局合計と各局表示値合計が一致しない場合も、元の値を保持します。<br>・年単位の長期予測、特殊番組の急変、局間の因果関係は保証できません。<br>・予測グラフの実測比較表示は<strong>採点・確認専用</strong>で、予測を出した後に取得します。</p><div class="divider"></div><h3>ブラウザでの利用</h3><p>このHTMLを保存して開くだけで動作します。Pythonや外部APIへの接続は不要です。データの追加後に別のブラウザや端末へ引き継ぐ場合は、必ず「データをJSONでバックアップ」で書き出してください。</p><h3>実装した予測モデルの厳密な意味</h3><p><strong>直前値維持：</strong>予測起点から15分以内に観測された直前の数値を、その後最大180分まで維持します。<br><strong>短期トレンド：</strong>直近45分の点から線形傾向を推定し、予測距離に応じて変化量を指数減衰させます。<br><strong>曜日時刻類似：</strong>予測日より過去の日付について、同じ時刻±15分付近を日別に集計し、曜日・直近性で加重します。最低2日必要。<br><strong>Ridge：</strong>過去の局別時系列から、時刻の周期関数と曜日関数に対する線形回帰を学習します。学習日数が5日以上、対象時刻近傍に3日以上の観測がある場合だけ使用します。未来の局別数値を特徴量には使いません。<br><strong>複合：</strong>上記の利用可能な予測値を、予測距離によって決まる固定重みで合成します。重み自体は学習していません。</p></article></div></section>
+<footer>ローカル保存 / 予測モデル v1.0 / 解析目的の試作実装。サービス提供元による公式予測ではありません。</footer>
+</div>
+<script>
+'use strict';
+(() => {
+    const STATIONS = ['NHK総合', '日本テレビ', 'テレビ朝日', 'TBS', 'テレビ東京', 'フジテレビ'];
+    const SHORT = ['NHK', '日テレ', 'テレ朝', 'TBS', 'テレ東', 'フジ'];
+    const COLORS = ['#7daffa', '#f9bd66', '#3dd6b1', '#ff7f95', '#bf99ff', '#dde58c'];
+    const MODELS = [['persist', '直前値維持'], ['trend', '短期トレンド'], ['seasonal', '曜日時刻類似'], ['ridge', 'Ridge回帰'], ['ensemble', '複合']];
+    const MS = 60000, DAY = 1440 * MS, DB = 'tval_offline_forecast_v1', KEY = 'main';
+    let store = new Map(), sources = [], conflicts = [], lastForecast = [], lastTest = [], chartData = [], chartForecast = [], testing = false;
+    const $ = s => document.getElementById(s);
+    const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const num = v => typeof v === 'number' && Number.isFinite(v) ? v : null;
+    function parseTime(s) { const m = String(s || '').trim().match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})[ T](\d{1,2}):(\d{2})(?::\d{2})?$/); if (!m)
+        return null; let [y, mo, d, h, mi] = m.slice(1).map(Number); if (mo < 1 || mo > 12 || d < 1 || d > 31 || h > 23 || mi > 59)
+        return null; let t = Date.UTC(y, mo - 1, d, h, mi), x = new Date(t); if (x.getUTCFullYear() !== y || x.getUTCMonth() !== mo - 1 || x.getUTCDate() !== d)
+        return null; return t; }
+    function clock(t) { if (t == null)
+        return '—'; const x = new Date(t); return `${x.getUTCFullYear()}/${String(x.getUTCMonth() + 1).padStart(2, '0')}/${String(x.getUTCDate()).padStart(2, '0')} ${String(x.getUTCHours()).padStart(2, '0')}:${String(x.getUTCMinutes()).padStart(2, '0')}`; }
+    function isoLocal(t) { return clock(t).replaceAll('/', '-').replace(' ', 'T'); }
+    function dayKey(t) { return Math.floor(t / DAY); }
+    function tod(t) { return Math.round((t - dayKey(t) * DAY) / MS); }
+    function dow(t) { return new Date(t).getUTCDay(); }
+    function daily(t) { return clock(t).slice(0, 10).replaceAll('/', '-'); }
+    function parseDateInput(s) { return parseTime(s + ' 00:00'); }
+    function round(v, d = 2) { return v == null ? '—' : Number(v).toFixed(d); }
+    function clamp(v) { return Number.isFinite(v) ? Math.max(0, Math.min(100, v)) : null; }
+    function parseNum(x) { if (x == null || !String(x).trim())
+        return null; const n = Number(String(x).trim()); return Number.isFinite(n) ? n : null; }
+    function info(el, s) { $(el).textContent = s; }
+    function pct(id, x) { $(id).style.width = Math.max(0, Math.min(100, x)) + '%'; }
+    // CSV / Japanese timestamps: original values are not resampled.
+    function csvRead(text) { let a = [], row = [], v = '', q = false; for (let i = 0; i < text.length; i++) {
+        const c = text[i];
+        if (q) {
+            if (c === '"' && text[i + 1] === '"') {
+                v += '"';
+                i++;
+            }
+            else if (c === '"')
+                q = false;
+            else
+                v += c;
+        }
+        else if (c === '"')
+            q = true;
+        else if (c === ',') {
+            row.push(v);
+            v = '';
+        }
+        else if (c === '\r' || c === '\n') {
+            if (c === '\r' && text[i + 1] === '\n')
+                i++;
+            row.push(v);
+            if (row.some(s => s !== ''))
+                a.push(row);
+            row = [];
+            v = '';
+        }
+        else
+            v += c;
+    } if (q)
+        throw Error('CSVの引用符が閉じていません'); row.push(v); if (row.some(s => s !== ''))
+        a.push(row); return a; }
+    function utf8Decode(buf) { try {
+        return new TextDecoder('utf-8', { fatal: true }).decode(buf);
+    }
+    catch {
+        return new TextDecoder('shift_jis').decode(buf);
+    } }
+    // Merge on minute timestamp. Keep original share / rank fields.
+    function importCsv(buffer, name) {
+        let rows = csvRead(utf8Decode(buffer));
+        if (!rows.length)
+            throw Error('空のCSV');
+        let header = rows.shift().map(x => x.replace(/^\ufeff/, '').trim()), idx = new Map(header.map((s, i) => [s, i]));
+        if (!idx.has('日時') || !STATIONS.every(s => idx.has(s)))
+            throw Error('「日時」と6局の列が必要です');
+        let count = 0, added = 0, dup = 0, bad = 0, changes = 0;
+        for (const r of rows) {
+            const t = parseTime(r[idx.get('日時')]);
+            if (t == null) {
+                bad++;
+                continue;
+            }
+            const get = k => idx.has(k) ? r[idx.get(k)] : undefined;
+            let record = { t, v: STATIONS.map(s => parseNum(get(s))), st: STATIONS.map(s => String(get(s + '_状態') ?? '不明').trim()), share: STATIONS.map(s => parseNum(get(s + '_シェア'))), rank: STATIONS.map(s => parseNum(get(s + '_順位'))), total: parseNum(get('6局合計')), other: parseNum(get('その他5局合計')) };
+            if (record.v.every(v => v == null)) {
+                bad++;
+                continue;
+            }
+            count++;
+            const old = store.get(t);
+            if (!old) {
+                store.set(t, record);
+                added++;
+                continue;
+            }
+            dup++;
+            for (let s = 0; s < 6; s++) {
+                let av = old.v[s], bv = record.v[s], as = old.st[s], bs = record.st[s];
+                if (bv == null)
+                    continue;
+                if (av == null) {
+                    old.v[s] = bv;
+                    old.st[s] = bs;
+                    old.share[s] = record.share[s];
+                    old.rank[s] = record.rank[s];
+                    changes++;
+                    continue;
+                }
+                if (av === bv && as === bs)
+                    continue;
+                let newBetter = (bs === '実測' && as !== '実測');
+                if (newBetter) {
+                    old.v[s] = bv;
+                    old.st[s] = bs;
+                    old.share[s] = record.share[s];
+                    old.rank[s] = record.rank[s];
+                    changes++;
+                }
+                if (av !== bv) {
+                    const detail = `既存 ${av} (${as}) / 今回 ${bv} (${bs}) → ${newBetter ? '今回' : '既存'}を採用`;
+                    if (conflicts.length < 100)
+                        conflicts.push({ when: clock(t) + ' ' + SHORT[s], message: detail });
+                }
+            }
+            if (old.total == null)
+                old.total = record.total;
+            if (old.other == null)
+                old.other = record.other;
+        }
+        let summary = { name, rows: rows.length, added, dup, bad, changes };
+        sources.push(summary);
+        return summary;
+    }
+    // ZIP central directory: stored or deflate raw. The browser's support for deflate-raw varies.
+    // Pure browser ZIP import (requires deflate-raw support for compressed entries).
+    async function unzipCsv(buffer) {
+        const bytes = new Uint8Array(buffer), dv = new DataView(buffer);
+        let e = -1;
+        for (let i = bytes.length - 22; i >= Math.max(0, bytes.length - 65558); i--) {
+            if (dv.getUint32(i, true) === 0x06054b50) {
+                e = i;
+                break;
+            }
+        }
+        if (e < 0)
+            throw Error('ZIP中央ディレクトリがありません');
+        const n = dv.getUint16(e + 10, true), off = dv.getUint32(e + 16, true), files = [];
+        let p = off;
+        for (let i = 0; i < n; i++) {
+            if (dv.getUint32(p, true) !== 0x02014b50)
+                throw Error('ZIP中央ディレクトリに問題');
+            let method = dv.getUint16(p + 10, true), size = dv.getUint32(p + 20, true), flen = dv.getUint16(p + 28, true), extra = dv.getUint16(p + 30, true), comment = dv.getUint16(p + 32, true), local = dv.getUint32(p + 42, true), name = utf8Decode(bytes.slice(p + 46, p + 46 + flen));
+            p += 46 + flen + extra + comment;
+            if (!name.toLowerCase().endsWith('.csv') || name.endsWith('/'))
+                continue;
+            if (size === 0xffffffff || local === 0xffffffff)
+                throw Error('ZIP64形式は未対応');
+            if (dv.getUint32(local, true) !== 0x04034b50)
+                throw Error('ZIPローカルヘッダに問題');
+            let ds = local + 30 + dv.getUint16(local + 26, true) + dv.getUint16(local + 28, true), compressed = bytes.slice(ds, ds + size), raw;
+            if (method === 0)
+                raw = compressed;
+            else if (method === 8) {
+                if (typeof DecompressionStream === 'undefined')
+                    throw Error('このブラウザはZIP解凍に未対応（CSVを直接投入）');
+                let stream = new Blob([compressed]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+                raw = new Uint8Array(await new Response(stream).arrayBuffer());
+            }
+            else
+                throw Error('未対応のZIP圧縮方式: ' + method);
+            files.push({ name, buffer: raw });
+        }
+        return files;
+    }
+    function sorted() { return [...store.values()].sort((a, b) => a.t - b.t); }
+    function findLE(arr, t) { let lo = 0, hi = arr.length; while (lo < hi) {
+        const mid = (lo + hi) >> 1;
+        if (arr[mid].t <= t)
+            lo = mid + 1;
+        else
+            hi = mid;
+    } return lo - 1; }
+    function findGE(arr, t) { let lo = 0, hi = arr.length; while (lo < hi) {
+        const mid = (lo + hi) >> 1;
+        if (arr[mid].t < t)
+            lo = mid + 1;
+        else
+            hi = mid;
+    } return lo; }
+    let dataCache = null;
+    function invalidate() { dataCache = null; lastForecast = []; lastTest = []; }
+    function dataset() { if (dataCache)
+        return dataCache; const rows = sorted(), series = STATIONS.map((_, s) => rows.filter(r => r.v[s] != null).map(r => ({ t: r.t, v: r.v[s], state: r.st[s] }))); const seriesReal = series.map(a => a.filter(p => p.state === '実測')); const byDay = new Map(); for (const row of rows) {
+        const d = dayKey(row.t);
+        if (!byDay.has(d))
+            byDay.set(d, []);
+        byDay.get(d).push(row);
+    } return (dataCache = { rows, series, seriesReal, byDay }); }
+    // Browser-local storage: automatic snapshot plus exportable JSON backup.
+    function dbOpen() { return new Promise((resolve, reject) => { if (!('indexedDB' in window)) {
+        reject(Error('IndexedDBが利用できません'));
+        return;
+    } let req = indexedDB.open(DB, 1); req.onupgradeneeded = () => req.result.createObjectStore('data'); req.onsuccess = () => resolve(req.result); req.onerror = () => reject(req.error); }); }
+    async function dbLoad() { try {
+        const db = await dbOpen(), x = await new Promise((resolve, reject) => { const tx = db.transaction('data', 'readonly'); const q = tx.objectStore('data').get(KEY); q.onsuccess = () => resolve(q.result); q.onerror = () => reject(q.error); });
+        db.close();
+        if (x && Array.isArray(x.rows)) {
+            store = new Map(x.rows.map(r => [r.t, r]));
+            sources = x.sources || [];
+            conflicts = x.conflicts || [];
+            invalidate();
+            info('importStatus', `前回の保存データ ${store.size.toLocaleString()}時点を復元しました。`);
+            renderAll();
+        }
+    }
+    catch (e) {
+        info('importStatus', 'ブラウザ保存の読み込みができません: ' + e.message);
+    } }
+    async function dbSave() { const db = await dbOpen(); await new Promise((resolve, reject) => { const tx = db.transaction('data', 'readwrite'); tx.objectStore('data').put({ rows: [...store.values()], sources, conflicts }, KEY); tx.oncomplete = resolve; tx.onerror = () => reject(tx.error); }); db.close(); }
+    function saveCsv(filename, lines) { const blob = new Blob(['\ufeff', lines.map(r => r.map(v => { const x = v == null ? '' : String(v); return /[",\r\n]/.test(x) ? '"' + x.replaceAll('"', '""') + '"' : x; }).join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8' }); download(blob, filename); }
+    function download(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); }
+    async function receiveFiles(files) {
+        if (!files.length)
+            return;
+        info('importStatus', `読み込みを開始しました（${files.length}ファイル）`);
+        pct('progress', 0);
+        let messages = [], failed = 0;
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            try {
+                const buffer = await file.arrayBuffer();
+                const items = file.name.toLowerCase().endsWith('.zip') ? await unzipCsv(buffer) : [{ name: file.name, buffer: new Uint8Array(buffer) }];
+                for (const it of items) {
+                    let x = importCsv(it.buffer, it.name);
+                    messages.push(`${it.name}: 新規 ${x.added}時点 / 重複 ${x.dup} / 不正 ${x.bad} / 上書き ${x.changes}`);
+                }
+            }
+            catch (e) {
+                failed++;
+                messages.push(`✗ ${file.name}: ${e.message}`);
+            }
+            pct('progress', (i + 1) / files.length * 100);
+            await new Promise(r => setTimeout(r, 0));
+        }
+        invalidate();
+        renderAll();
+        if (store.size) {
+            setDemoDefaults();
+            try {
+                await dbSave();
+                messages.push('ブラウザに自動保存しました。');
+            }
+            catch (e) {
+                messages.push('⚠ 保存に失敗: ' + e.message + '。バックアップしてください。');
+            }
+        }
+        info('importStatus', messages.slice(-22).join('\n') + `\n成功/失敗ファイル: ${files.length - failed}/${failed}、現在 ${store.size.toLocaleString()}時点`);
+    }
+    function metrics() { const { rows, byDay } = dataset(), N = rows.length; let real = 0, est = 0, missing = 0, fullReal = 0; for (const r of rows) {
+        let realC = 0;
+        for (let s = 0; s < 6; s++) {
+            if (r.v[s] == null)
+                missing++;
+            else if (r.st[s] === '実測') {
+                real++;
+                realC++;
+            }
+            else if (r.st[s] === '経路推定')
+                est++;
+        }
+        if (realC === 6)
+            fullReal++;
+    } return { N, days: byDay.size, real, est, missing, fullReal, first: N ? rows[0].t : null, last: N ? rows.at(-1).t : null }; }
+    function renderAll() { renderMetrics(); renderHeat(); drawData(); }
+    function renderMetrics() { const x = metrics(); const entries = [['記録時点', x.N.toLocaleString()], ['日数', x.days.toLocaleString()], ['実測 局×分', x.real.toLocaleString()], ['経路推定 局×分', x.est.toLocaleString()], ['全局実測の時点', x.fullReal.toLocaleString()]]; $('metrics').innerHTML = entries.map(([label, value]) => `<div class="metric"><strong>${esc(value)}</strong><span>${esc(label)}</span></div>`).join(''); info('dateCoverage', x.N ? `対象期間: ${clock(x.first)} 〜 ${clock(x.last)} / 数値欠損 ${x.missing}局時点 / 重複・数値競合の警告 ${conflicts.length}件（表示保存の上限100）` : 'まだデータはありません'); $('fileLog').innerHTML = sources.slice(-60).reverse().map(s => `<tr><td>${esc(s.name)}</td><td>${s.rows}</td><td>新規${s.added}・重複${s.dup}・不正${s.bad}</td></tr>`).join(''); $('conflictLog').innerHTML = conflicts.slice().reverse().map(s => `<tr><td>${esc(s.when)}</td><td>${esc(s.message)}</td></tr>`).join(''); if (x.N) {
+        if (!$('viewDate').value)
+            $('viewDate').value = daily(x.last);
+        if (!$('testFrom').value)
+            $('testFrom').value = daily(x.first);
+        if (!$('testTo').value)
+            $('testTo').value = daily(x.last);
+    } }
+    function renderHeat() { const { rows } = dataset(); const cells = Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => new Set())); for (const r of rows)
+        cells[dow(r.t)][new Date(r.t).getUTCHours()].add(dayKey(r.t)); const max = Math.max(1, ...cells.flat().map(s => s.size)); let out = '<div class="heatcell heatlabel"></div>'; for (let h = 0; h < 24; h++)
+        out += `<div class="heatcell heatlabel">${h}</div>`; ['日', '月', '火', '水', '木', '金', '土'].forEach((wd, d) => { out += `<div class="heatcell heatlabel">${wd}</div>`; for (let h = 0; h < 24; h++) {
+        const n = cells[d][h].size, opacity = (.08 + .83 * n / max).toFixed(2);
+        out += `<div class="heatcell" title="${wd}曜 ${h}時 : ${n}日分" style="background:rgba(39,207,173,${opacity})">${n || ''}</div>`;
+    } }); $('heatmap').innerHTML = out; }
+    function buildLegend(el) { $(el).innerHTML = STATIONS.map((x, i) => `<span class="station"><span class="swatch" style="background:${COLORS[i]}"></span>${SHORT[i]}</span>`).join(''); }
+    // Canvas plotting without external JS libraries.
+    function makePlot(canvasId, tipId, lines, opts = {}) {
+        const canvas = $(canvasId), tip = $(tipId), parent = canvas.parentElement, rect = parent.getBoundingClientRect(), w = Math.max(250, rect.width), h = Math.max(200, rect.height), ratio = Math.min(devicePixelRatio || 1, 2);
+        canvas.width = Math.round(w * ratio);
+        canvas.height = Math.round(h * ratio);
+        const ctx = canvas.getContext('2d');
+        ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+        ctx.clearRect(0, 0, w, h);
+        ctx.fillStyle = '#091728';
+        ctx.fillRect(0, 0, w, h);
+        const margin = { left: 51, right: 17, top: 14, bottom: 38 }, pw = w - margin.left - margin.right, ph = h - margin.top - margin.bottom;
+        const all = lines.flatMap(l => l.points.filter(p => num(p.v) != null)), times = all.map(p => p.t);
+        if (!times.length) {
+            ctx.fillStyle = '#9cb4c8';
+            ctx.font = '14px sans-serif';
+            ctx.fillText('表示するデータがありません', 25, 50);
+            canvas.onpointermove = null;
+            return;
+        }
+        let minT = opts.minT ?? Math.min(...times), maxT = opts.maxT ?? Math.max(...times);
+        if (maxT <= minT)
+            maxT = minT + MS;
+        const values = all.map(p => p.v), maxY = Math.max(1, Math.max(...values) * 1.13), minY = 0;
+        const xx = t => margin.left + (t - minT) / (maxT - minT) * pw, yy = v => margin.top + (maxY - v) / (maxY - minY) * ph;
+        ctx.strokeStyle = '#24405b';
+        ctx.lineWidth = 1;
+        ctx.font = '11px sans-serif';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#aabed1';
+        for (let i = 0; i <= 5; i++) {
+            const v = maxY * i / 5, y = yy(v);
+            ctx.beginPath();
+            ctx.moveTo(margin.left, y);
+            ctx.lineTo(w - margin.right, y);
+            ctx.stroke();
+            ctx.fillText(v.toFixed(1), 7, y);
+        }
+        const ticks = Math.min(8, Math.max(3, Math.floor(pw / 90)));
+        ctx.textAlign = 'center';
+        for (let i = 0; i <= ticks; i++) {
+            let t = minT + (maxT - minT) * i / ticks, x = xx(t);
+            ctx.beginPath();
+            ctx.moveTo(x, margin.top);
+            ctx.lineTo(x, margin.top + ph);
+            ctx.stroke();
+            ctx.fillText(clock(t).slice(5), x, h - 21);
+        }
+        ctx.textAlign = 'left';
+        if (opts.cutoff != null && opts.cutoff >= minT && opts.cutoff <= maxT) {
+            ctx.strokeStyle = '#ffffff9a';
+            ctx.setLineDash([3, 6]);
+            ctx.beginPath();
+            ctx.moveTo(xx(opts.cutoff), margin.top);
+            ctx.lineTo(xx(opts.cutoff), margin.top + ph);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+        for (const line of lines) {
+            const points = line.points, link = line.style || 'solid';
+            ctx.strokeStyle = line.color;
+            ctx.globalAlpha = link === 'truth' ? .55 : 1;
+            ctx.lineWidth = link === 'pred' ? 2.2 : 1.4;
+            ctx.setLineDash(link === 'pred' ? [7, 4] : link === 'truth' ? [2, 4] : []);
+            ctx.beginPath();
+            let prev = null;
+            for (const p of points) {
+                if (num(p.v) == null) {
+                    prev = null;
+                    continue;
+                }
+                if (prev === null || p.t - prev > 10 * MS)
+                    ctx.moveTo(xx(p.t), yy(p.v));
+                else
+                    ctx.lineTo(xx(p.t), yy(p.v));
+                prev = p.t;
+            }
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.globalAlpha = 1;
+        }
+        canvas.onpointermove = e => { const box = canvas.getBoundingClientRect(), mx = e.clientX - box.left, my = e.clientY - box.top; if (mx < margin.left || mx > w - margin.right || my < margin.top || my > h - margin.bottom) {
+            tip.style.display = 'none';
+            return;
+        } const t = minT + (mx - margin.left) / pw * (maxT - minT), candidates = []; for (const l of lines) {
+            if (!l.points.length)
+                continue;
+            let lo = 0, hi = l.points.length;
+            while (lo < hi) {
+                let md = (lo + hi) >> 1;
+                if (l.points[md].t < t)
+                    lo = md + 1;
+                else
+                    hi = md;
+            }
+            let p = l.points[Math.min(l.points.length - 1, lo)];
+            if (lo > 0 && Math.abs(l.points[lo - 1].t - t) < Math.abs(p.t - t))
+                p = l.points[lo - 1];
+            if (p && Math.abs(p.t - t) < Math.max(2 * MS, (maxT - minT) / 140) && p.v != null)
+                candidates.push({ n: l.name, v: p.v, t: p.t });
+        } if (!candidates.length) {
+            tip.style.display = 'none';
+            return;
+        } tip.textContent = clock(candidates[0].t) + '\n' + candidates.map(p => `${p.n}: ${round(p.v, 2)}`).join('\n'); tip.style.left = Math.max(5, Math.min(mx + 12, w - 210)) + 'px'; tip.style.top = Math.max(5, Math.min(my + 10, h - 150)) + 'px'; tip.style.display = 'block'; };
+        canvas.onpointerleave = () => tip.style.display = 'none';
+    }
+    function drawData() { const date = $('viewDate').value; if (!date) {
+        makePlot('dataChart', 'dataTip', []);
+        return;
+    } const rows = dataset().rows.filter(r => daily(r.t) === date); const lines = STATIONS.map((s, i) => ({ name: SHORT[i], color: COLORS[i], points: rows.map(r => ({ t: r.t, v: r.v[i] })) })); chartData = lines; makePlot('dataChart', 'dataTip', lines); }
+    function getSeries(s, useEstimated) { const data = dataset(); return useEstimated ? data.series[s] : data.seriesReal[s]; }
+    function context(cutoff, useEstimated) { return { cutoff, useEstimated, ss: STATIONS.map((_, s) => getSeries(s, useEstimated)), ridge: new Map(), ridgeCoverage: new Map() }; }
+    function recent(c, s) { const a = c.ss[s], i = findLE(a, c.cutoff); return i >= 0 ? a[i] : null; }
+    // Baseline 1: hold the last measured value, only at short distances.
+    function predPersist(c, s, t) { const p = recent(c, s); if (!p || c.cutoff - p.t > 15 * MS || (t - c.cutoff) > 180 * MS)
+        return null; return clamp(p.v); }
+    // Baseline 2: trend estimated from strictly historical points.
+    function predTrend(c, s, t) { const a = c.ss[s], i = findLE(a, c.cutoff), p = i >= 0 ? a[i] : null, h = (t - c.cutoff) / MS; if (!p || c.cutoff - p.t > 10 * MS || h > 180)
+        return null; const points = []; for (let k = i; k >= 0 && a[k].t >= c.cutoff - 45 * MS; k--)
+        points.push(a[k]); if (points.length < 5 || points[0].t - points.at(-1).t < 5 * MS)
+        return null; let n = points.length, mx = 0, my = 0; for (let q of points) {
+        mx += (q.t - c.cutoff) / MS;
+        my += q.v;
+    } mx /= n; my /= n; let top = 0, bot = 0; for (let q of points) {
+        const x = (q.t - c.cutoff) / MS - mx;
+        top += x * (q.v - my);
+        bot += x * x;
+    } const slope = bot > 0 ? top / bot : 0; return clamp(p.v + slope * h * Math.exp(-h / 45)); }
+    // Historical calendar baseline: aggregate within each past day first.
+    function predSeasonal(c, s, t) { let d = dayKey(t), min = tod(t), byDay = dataset().byDay, wsum = 0, vsum = 0, days = 0; for (let delta = 1; delta <= 140; delta++) {
+        let old = d - delta;
+        const dayrows = byDay.get(old);
+        if (!dayrows)
+            continue;
+        let a = 0, b = 0;
+        const limit = (old * DAY) + (min + 15) * MS;
+        for (let k = findGE(dayrows, (old * DAY) + (min - 15) * MS); k < dayrows.length && dayrows[k].t <= limit; k++) {
+            const r = dayrows[k];
+            if (r.t > c.cutoff || r.v[s] == null || (!c.useEstimated && r.st[s] !== '実測'))
+                continue;
+            let diff = Math.abs(tod(r.t) - min);
+            const w = Math.exp(-diff * diff / (2 * 8 * 8));
+            a += w * r.v[s];
+            b += w;
+        }
+        if (b <= 0)
+            continue;
+        let week = dow(old * DAY) === dow(t) ? 1 : .25, recency = Math.exp(-delta / 40), wt = week * recency;
+        vsum += wt * a / b;
+        wsum += wt;
+        days++;
+    } return days >= 2 && wsum > 0 ? clamp(vsum / wsum) : null; }
+    function ridgeX(t) { const a = 2 * Math.PI * tod(t) / 1440, b = 2 * Math.PI * dow(t) / 7; return [1, Math.sin(a), Math.cos(a), Math.sin(2 * a), Math.cos(2 * a), Math.sin(3 * a), Math.cos(3 * a), Math.sin(b), Math.cos(b), dow(t) === 0 || dow(t) === 6 ? 1 : 0]; }
+    function linearSolve(A, b) { let n = b.length; const mat = A.map((r, i) => [...r, b[i]]); for (let k = 0; k < n; k++) {
+        let pivot = k;
+        for (let i = k + 1; i < n; i++)
+            if (Math.abs(mat[i][k]) > Math.abs(mat[pivot][k]))
+                pivot = i;
+        if (Math.abs(mat[pivot][k]) < 1e-9)
+            return null;
+        [mat[pivot], mat[k]] = [mat[k], mat[pivot]];
+        const div = mat[k][k];
+        for (let j = k; j <= n; j++)
+            mat[k][j] /= div;
+        for (let i = 0; i < n; i++)
+            if (i !== k) {
+                let coef = mat[i][k];
+                for (let j = k; j <= n; j++)
+                    mat[i][j] -= coef * mat[k][j];
+            }
+    } return mat.map(r => r[n]); }
+    // Actual Ridge training in JavaScript: solve (X^T W X + lambda I) beta = X^T W y.
+    function trainRidge(c, s) { if (c.ridge.has(s))
+        return c.ridge.get(s); const all = c.ss[s], end = findLE(all, c.cutoff); if (end < 99) {
+        c.ridge.set(s, null);
+        return null;
+    } const dist = new Set(); for (let i = 0; i <= end; i++)
+        dist.add(dayKey(all[i].t)); if (dist.size < 5) {
+        c.ridge.set(s, null);
+        return null;
+    } let step = Math.max(1, Math.floor((end + 1) / 2500)), n = 10, A = Array.from({ length: n }, () => Array(n).fill(0)), b = Array(n).fill(0), count = 0; for (let i = 0; i <= end; i += step) {
+        let z = all[i], x = ridgeX(z.t), age = (c.cutoff - z.t) / DAY, w = Math.exp(-age / 75);
+        for (let j = 0; j < n; j++) {
+            b[j] += w * x[j] * z.v;
+            for (let k = 0; k < n; k++)
+                A[j][k] += w * x[j] * x[k];
+        }
+        count++;
+    } for (let j = 1; j < n; j++)
+        A[j][j] += Math.max(12, count * .015); const coef = linearSolve(A, b); const result = coef ? { coef } : null; c.ridge.set(s, result); return result; }
+    // Count distinct historical dates that cover each minute-of-day.
+    function ridgeSlotCoverage(c, s, targetDay) { const key = s + '|' + targetDay; if (c.ridgeCoverage.has(key))
+        return c.ridgeCoverage.get(key); const a = c.ss[s], end = findLE(a, c.cutoff), dailyIntervals = new Map(); for (let i = 0; i <= end; i++) {
+        const z = a[i], day = dayKey(z.t);
+        if (day >= targetDay)
+            continue;
+        let diff = dailyIntervals.get(day);
+        if (!diff) {
+            diff = new Int16Array(1442);
+            dailyIntervals.set(day, diff);
+        }
+        let minute = tod(z.t), lo = Math.max(0, minute - 45), hi = Math.min(1439, minute + 45);
+        diff[lo]++;
+        diff[hi + 1]--;
+    } let coverage = new Uint16Array(1440); for (const diff of dailyIntervals.values()) {
+        let live = 0;
+        for (let minute = 0; minute < 1440; minute++) {
+            live += diff[minute];
+            if (live > 0)
+                coverage[minute]++;
+        }
+    } c.ridgeCoverage.set(key, coverage); return coverage; }
+    function predRidge(c, s, t) { const m = trainRidge(c, s); if (!m)
+        return null; if (ridgeSlotCoverage(c, s, dayKey(t))[tod(t)] < 3)
+        return null; const x = ridgeX(t); return clamp(x.reduce((v, q, i) => v + q * m.coef[i], 0)); }
+    // The current context supplies only observations no later than the cutoff.
+    function predict(c, s, t, model) { if (t <= c.cutoff)
+        return null; switch (model) {
+        case 'persist': return predPersist(c, s, t);
+        case 'trend': return predTrend(c, s, t);
+        case 'seasonal': return predSeasonal(c, s, t);
+        case 'ridge': return predRidge(c, s, t);
+        default: {
+            const h = (t - c.cutoff) / MS, p = predPersist(c, s, t), r = predTrend(c, s, t), q = predSeasonal(c, s, t), g = predRidge(c, s, t), candidates = [];
+            if (p != null)
+                candidates.push([p, Math.exp(-h / 40) * 2]);
+            if (r != null)
+                candidates.push([r, Math.exp(-h / 55) * 1.2]);
+            if (q != null)
+                candidates.push([q, 2]);
+            if (g != null)
+                candidates.push([g, 2]);
+            const sum = candidates.reduce((a, b) => a + b[1], 0);
+            return sum ? clamp(candidates.reduce((a, b) => a + b[0] * b[1], 0) / sum) : null;
+        }
+    } }
+    function setDemoDefaults() { let a = dataset().rows; if (a.length < 3)
+        return; let last = a.at(-1).t; let end = last, cutoff = last - 60 * MS; let index = findLE(a, cutoff); if (index < 5)
+        index = Math.floor(a.length / 3); cutoff = a[Math.max(0, index)].t; let start = cutoff + MS; $('cutoff').value = isoLocal(cutoff); $('forecastStart').value = isoLocal(start); $('forecastEnd').value = isoLocal(Math.min(end, cutoff + 180 * MS)); }
+    // Forecast every requested minute and compare with withheld truth only afterwards.
+    function runForecast() { if (!store.size) {
+        info('forecastStatus', '最初にCSVを取り込んでください。');
+        return;
+    } const cutoff = parseTime($('cutoff').value.replace('T', ' ')), start = parseTime($('forecastStart').value.replace('T', ' ')), end = parseTime($('forecastEnd').value.replace('T', ' ')), model = $('modelSelect').value; if ([cutoff, start, end].some(x => x == null) || start <= cutoff || end < start) {
+        info('forecastStatus', '日時に問題があります。「情報の締切」 < 「予測開始」 ≤ 「予測終了」にしてください。');
+        return;
+    } if ((end - start) / MS > 1440) {
+        info('forecastStatus', '初版の1回の予測は最大1,441時点（24時間＋1分）です。期間を分割してください。');
+        return;
+    } const c = context(cutoff, $('useEstimated').checked); const result = []; for (let t = start; t <= end; t += MS) {
+        result.push({ t, v: STATIONS.map((_, s) => predict(c, s, t, model)) });
+    } lastForecast = result; let possible = result.reduce((n, r) => n + r.v.filter(x => x != null).length, 0), total = result.length * 6; info('forecastStatus', `モデル: ${MODELS.find(x => x[0] === model)[1]} / 締切: ${clock(cutoff)} / ${result.length}分時点 × 6局\n予測可能 ${possible}/${total}局時点。予測できない局・時間は空欄にしています。\n※ 既存の対象期間データは予測計算に使用していません。`); drawForecast(cutoff); renderForecastTable(); }
+    function drawForecast(cutoff) { if (!lastForecast.length) {
+        makePlot('forecastChart', 'forecastTip', []);
+        return;
+    } const start = lastForecast[0].t, end = lastForecast.at(-1).t, rows = dataset().rows; const lines = []; for (let s = 0; s < 6; s++) {
+        if ($('showPast').checked) {
+            let pts = rows.filter(r => r.t >= cutoff - 30 * MS && r.t <= cutoff).map(r => ({ t: r.t, v: r.v[s] }));
+            lines.push({ name: SHORT[s] + ' 過去', color: COLORS[s], style: 'solid', points: pts });
+        }
+        lines.push({ name: SHORT[s] + ' 予測', color: COLORS[s], style: 'pred', points: lastForecast.map(r => ({ t: r.t, v: r.v[s] })) });
+        if ($('showActual').checked) {
+            let pts = rows.filter(r => r.t >= start && r.t <= end).map(r => ({ t: r.t, v: r.v[s] }));
+            lines.push({ name: SHORT[s] + ' 実測比較', color: COLORS[s], style: 'truth', points: pts });
+        }
+    } chartForecast = lines; makePlot('forecastChart', 'forecastTip', lines, { cutoff, minT: $('showPast').checked ? Math.min(start, cutoff - 30 * MS) : start, maxT: end }); let sums = [], pairs = 0, sq = 0, abs = 0; for (let r of lastForecast) {
+        let actual = store.get(r.t);
+        if (!actual)
+            continue;
+        for (let s = 0; s < 6; s++) {
+            if (r.v[s] != null && actual.v[s] != null && actual.st[s] === '実測') {
+                let e = r.v[s] - actual.v[s];
+                abs += Math.abs(e);
+                sq += e * e;
+                pairs++;
+            }
+        }
+    } sums = [['予測した時点', lastForecast.length], ['予測可能な局時点', lastForecast.reduce((a, r) => a + r.v.filter(x => x != null).length, 0)], ['比較可能な実測', pairs], ['MAE（比較可能分）', pairs ? round(abs / pairs, 3) : '—'], ['RMSE（比較可能分）', pairs ? round(Math.sqrt(sq / pairs), 3) : '—']]; $('forecastStats').innerHTML = sums.map(([k, v]) => `<div class="metric"><strong>${esc(v)}</strong><span>${esc(k)}</span></div>`).join(''); }
+    function renderForecastTable() { $('forecastRows').innerHTML = lastForecast.slice(0, 300).map(r => `<tr><td>${clock(r.t)}</td>${r.v.map(v => `<td>${v == null ? '—' : round(v, 3)}</td>`).join('')}</tr>`).join(''); }
+    function testCandidates(rows, from, to, step, maxH) { let found = [], lastDay = null, lastTime = null, firstTime = null; for (let r of rows) {
+        if (r.t < from || r.t >= to)
+            continue;
+        const d = dayKey(r.t);
+        if (d !== lastDay) {
+            lastDay = d;
+            firstTime = r.t;
+            lastTime = null;
+        }
+        if (r.t - firstTime < 20 * MS)
+            continue;
+        if (lastTime != null && r.t - lastTime < step * MS)
+            continue;
+        const r2 = store.get(r.t + MS);
+        if (!r2)
+            continue;
+        found.push(r.t);
+        lastTime = r.t;
+    } return found; }
+    // Walk-forward verification: retrain/reference only data up to each origin.
+    async function runBacktest() { if (testing)
+        return; if (store.size < 10) {
+        info('backtestStatus', '検証するには10時点以上のデータが必要です。');
+        return;
+    } const from = parseDateInput($('testFrom').value), to = parseDateInput($('testTo').value), horizons = [...new Set($('horizons').value.split(',').map(x => Number(x.trim())).filter(x => Number.isInteger(x) && x >= 1 && x <= 1440))].sort((a, b) => a - b), step = Math.round(Number($('originStep').value)), max = Math.round(Number($('maxOrigins').value)), all = $('testObserved').value === 'all'; if (from == null || to == null || from > to || !horizons.length || step < 5 || step > 360 || max < 1 || max > 240) {
+        info('backtestStatus', '検証の日時・起点間隔・予測距離の設定を確認してください。');
+        return;
+    } testing = true; lastTest = []; pct('backProgress', 0); $('runBacktest').disabled = true; let candidates = testCandidates(dataset().rows, from, to + DAY, step); if (candidates.length > max) {
+        const k = candidates;
+        candidates = [];
+        for (let i = 0; i < max; i++)
+            candidates.push(k[Math.floor((i + .5) * k.length / max)]);
+        candidates = [...new Set(candidates)].sort((a, b) => a - b);
+    } if (!candidates.length) {
+        testing = false;
+        $('runBacktest').disabled = false;
+        info('backtestStatus', '検証起点を作れません。1日の中に20分以上の記録が必要です。');
+        return;
+    } const modelIds = MODELS.map(x => x[0]), t0 = performance.now(); for (let i = 0; i < candidates.length; i++) {
+        const origin = candidates[i], c = context(origin, $('useEstimated').checked);
+        for (const h of horizons) {
+            const t = origin + h * MS, r = store.get(t);
+            if (!r)
+                continue;
+            for (let s = 0; s < 6; s++) {
+                const truth = r.v[s];
+                if (truth == null || (!all && r.st[s] !== '実測'))
+                    continue;
+                for (const model of modelIds) {
+                    const y = predict(c, s, t, model);
+                    if (y == null)
+                        continue;
+                    lastTest.push({ origin, t, h, s, model, pred: y, actual: truth, error: y - truth });
+                }
+            }
+        }
+        pct('backProgress', (i + 1) / candidates.length * 100);
+        if (i % 3 === 0)
+            await new Promise(r => setTimeout(r, 0));
+    } let days = new Set(candidates.map(dayKey)).size; info('backtestStatus', `検証起点 ${candidates.length}個 / 検証日数 ${days}日 / 採点 ${lastTest.length.toLocaleString()}件（モデル・放送局・予測距離別）\n処理時間 ${((performance.now() - t0) / 1000).toFixed(2)}秒。各起点より未来の値は学習に使用していません。`); renderScores(); testing = false; $('runBacktest').disabled = false; }
+    function summaryScore(arr) { if (!arr.length)
+        return null; let ae = 0, se = 0, b = 0, ds = new Set(); for (const r of arr) {
+        ae += Math.abs(r.error);
+        se += r.error * r.error;
+        b += r.error;
+        ds.add(dayKey(r.origin));
+    } return { mae: ae / arr.length, rmse: Math.sqrt(se / arr.length), bias: b / arr.length, count: arr.length, days: ds.size }; }
+    function renderScores() { let arr = MODELS.map(([id, name]) => ({ id, name, score: summaryScore(lastTest.filter(x => x.model === id)) })); arr.sort((a, b) => (a.score?.mae ?? Infinity) - (b.score?.mae ?? Infinity)); $('scoreRows').innerHTML = arr.map(x => `<tr><td>${esc(x.name)}</td><td>${x.score ? round(x.score.mae, 3) : '—'}</td><td>${x.score ? round(x.score.rmse, 3) : '—'}</td><td>${x.score ? round(x.score.bias, 3) : '—'}</td><td>${x.score?.count || 0}</td><td>${x.score?.days || 0}</td></tr>`).join(''); const hs = [...new Set(lastTest.map(r => r.h))].sort((a, b) => a - b); $('horizonScore').querySelector('thead').innerHTML = '<tr><th>モデル</th>' + hs.map(h => `<th>${h}分先</th>`).join('') + '</tr>'; $('horizonScore').querySelector('tbody').innerHTML = MODELS.map(([id, name]) => `<tr><td>${esc(name)}</td>` + hs.map(h => { const z = summaryScore(lastTest.filter(r => r.model === id && r.h === h)); return `<td title="採点数 ${z?.count || 0}">${z ? round(z.mae, 3) : '—'}<small class="muted"> (${z?.count || 0})</small></td>`; }).join('') + '</tr>').join(''); }
+    function tab(key) { document.querySelectorAll('.page').forEach(el => el.classList.toggle('active', el.id === 'page-' + key)); document.querySelectorAll('[data-tab]').forEach(el => el.classList.toggle('active', el.dataset.tab === key)); if (key === 'data')
+        drawData(); if (key === 'forecast' && lastForecast.length)
+        drawForecast(parseTime($('cutoff').value.replace('T', ' '))); }
+    // Event binding
+    for (const b of document.querySelectorAll('[data-tab]'))
+        b.addEventListener('click', () => tab(b.dataset.tab));
+    $('files').addEventListener('change', e => { receiveFiles([...e.target.files]); e.target.value = ''; });
+    $('drop').addEventListener('dragover', e => { e.preventDefault(); $('drop').classList.add('hover'); });
+    $('drop').addEventListener('dragleave', () => $('drop').classList.remove('hover'));
+    $('drop').addEventListener('drop', e => { e.preventDefault(); $('drop').classList.remove('hover'); receiveFiles([...e.dataTransfer.files]); });
+    $('viewDate').addEventListener('change', drawData);
+    $('demoForecast').addEventListener('click', () => { setDemoDefaults(); runForecast(); });
+    $('runForecast').addEventListener('click', runForecast);
+    $('showActual').addEventListener('change', () => { if (lastForecast.length)
+        drawForecast(parseTime($('cutoff').value.replace('T', ' '))); });
+    $('showPast').addEventListener('change', () => { if (lastForecast.length)
+        drawForecast(parseTime($('cutoff').value.replace('T', ' '))); });
+    $('runBacktest').addEventListener('click', () => runBacktest().catch(e => { testing = false; $('runBacktest').disabled = false; info('backtestStatus', '検証に失敗: ' + e.message); }));
+    $('exportForecast').addEventListener('click', () => { if (!lastForecast.length) {
+        info('forecastStatus', 'まず予測してください。');
+        return;
+    } saveCsv('tval_prediction.csv', [['日時', ...STATIONS], ...lastForecast.map(r => [clock(r.t), ...r.v.map(x => x == null ? '' : x.toFixed(5))])]); });
+    $('exportBacktest').addEventListener('click', () => { if (!lastTest.length) {
+        info('backtestStatus', '先に検証を実行してください。');
+        return;
+    } saveCsv('tval_backtest.csv', [['予測起点', '予測対象', '何分先', '放送局', 'モデル', '予測', '実測', '誤差'], ...lastTest.map(r => [clock(r.origin), clock(r.t), r.h, STATIONS[r.s], r.model, r.pred.toFixed(5), r.actual.toFixed(5), r.error.toFixed(5)])]); });
+    $('exportBackup').addEventListener('click', () => { if (!store.size) {
+        info('importStatus', '保存するデータがありません。');
+        return;
+    } download(new Blob([JSON.stringify({ version: 1, rows: [...store.values()], sources, conflicts })], { type: 'application/json' }), 'tval_forecast_backup.json'); });
+    $('importBackup').addEventListener('click', () => $('backupFile').click());
+    $('backupFile').addEventListener('change', async (e) => { const f = e.target.files[0]; if (!f)
+        return; try {
+        const x = JSON.parse(await f.text());
+        if (x.version !== 1 || !Array.isArray(x.rows) || !x.rows.every(r => Number.isFinite(r.t) && Array.isArray(r.v) && r.v.length === 6))
+            throw Error('対応したバックアップ形式ではありません');
+        if (!confirm(`バックアップ ${x.rows.length}時点で現在のデータを置き換えます。続けますか？`))
+            return;
+        store = new Map(x.rows.map(r => [r.t, r]));
+        sources = x.sources || [];
+        conflicts = x.conflicts || [];
+        invalidate();
+        renderAll();
+        setDemoDefaults();
+        await dbSave();
+        info('importStatus', 'バックアップを復元しました: ' + store.size.toLocaleString() + '時点');
+    }
+    catch (err) {
+        info('importStatus', 'バックアップ復元失敗: ' + err.message);
+    } e.target.value = ''; });
+    $('clearData').addEventListener('click', async () => { if (!confirm('読み込んだすべてのデータと保存情報を削除します。よろしいですか？'))
+        return; store.clear(); sources = []; conflicts = []; invalidate(); try {
+        await dbSave();
+    }
+    catch { } renderAll(); $('forecastRows').innerHTML = ''; $('scoreRows').innerHTML = ''; info('importStatus', '削除しました。'); });
+    let resizeTimer;
+    window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { if ($('page-data').classList.contains('active'))
+        drawData(); if ($('page-forecast').classList.contains('active') && lastForecast.length)
+        drawForecast(parseTime($('cutoff').value.replace('T', ' '))); }, 200); });
+    buildLegend('legend1');
+    buildLegend('legend2');
+    renderAll();
+    dbLoad();
+    // Browser-console tests: window.TVAL_TEST is intentionally read-only, useful for validating imports.
+    window.TVAL_TEST = { getStats: () => metrics(), getRows: () => dataset().rows, getForecast: () => lastForecast, getBacktest: () => lastTest, parseTime };
+})();
+</script>
+</body>
+</html>
